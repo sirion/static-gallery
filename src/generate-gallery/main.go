@@ -57,11 +57,11 @@ func main() {
 	var outDir, templatePath, thumbSizeStr, displaySizeStr, backgroundSizeStr string
 	var optimize bool
 
-	flag.StringVar(&outDir, "output", "", "output directory")
+	flag.StringVar(&outDir, "output", "", "Directory where the generated gallery is written to")
 
-	flag.StringVar(&templatePath, "template", "", "Directory containing templates")
+	flag.StringVar(&templatePath, "template", "", "Directory containing the template")
 
-	flag.BoolVar(&optimize, "optimize", false, "Embed Javascript and CSS in the HTML file and remove comments")
+	flag.BoolVar(&optimize, "optimize", false, "Embed JavaScript and CSS into the HTML file and remove comments")
 
 	flag.StringVar(&thumbSizeStr, "thumbSize", ResolutionQuarterFullHD, "Maximum size of thumbnail pictures")
 	flag.StringVar(&displaySizeStr, "displaySize", ResolutionQuadHD, "Maximum size of display pictures")
@@ -646,9 +646,9 @@ func parseSize(sizeString string) (size, error) {
 func showHelp() {
 	fmt.Fprint(flag.CommandLine.Output(), "\n\n")
 	fmt.Fprint(flag.CommandLine.Output(), "Usage:\n")
-	fmt.Fprint(flag.CommandLine.Output(), "    generate-gallery [options] path/to/collection(s)\n")
+	fmt.Fprint(flag.CommandLine.Output(), "    generate-gallery generate-gallery -output foldername -template path/to/template path/to/collection(s) path/to/collection(s)\n")
 	fmt.Fprint(flag.CommandLine.Output(), "\n")
-	fmt.Fprint(flag.CommandLine.Output(), "The backgrounds path must be a folder directly containing the background images and a folder for each collection.\n")
+	fmt.Fprint(flag.CommandLine.Output(), "The path must be a folder directly containing the background images and a folder containing images for each collection.\n")
 	fmt.Fprint(flag.CommandLine.Output(), "\n")
 	flag.PrintDefaults()
 	os.Exit(0)
