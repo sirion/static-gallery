@@ -3,3 +3,4 @@ bin/gocode
 src/github.com
 src/golang.org
 testdata/_*
+.vscode

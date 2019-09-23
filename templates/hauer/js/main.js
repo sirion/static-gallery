@@ -71,9 +71,18 @@
 		fullsizeLink.addEventListener("click", e => e.stopPropagation());
 		let activeThumb = null;
 
-		function showPicture(picture, event) {
-			activeThumb = event.target;
-			activeThumb.classList.add("active");
+		let curPictureIndex = 0;
+		let curCollectionIndex = 0;
+		let showing = false;
+
+		function showPicture(picture, index, event) {
+			curPictureIndex = index;
+			showing = true;
+
+			if (event) {
+				activeThumb = event.target;
+				activeThumb.classList.add("active");
+			}
 
 			bg.style.opacity = 1;
 			bg.style.zIndex = 10;
@@ -82,13 +91,48 @@
 			fullsizeLink.href = picture.fullsize ? picture.fullsize : picture.picture;
 		}
 
+		function showNextPicture() {
+			const collection = config.collections[curCollectionIndex].pictures;
+			curPictureIndex++;
+			if (!collection[curPictureIndex]) {
+				showFirstPicture();
+			} else {
+				showPicture(collection[curPictureIndex], curPictureIndex)
+			}
+		}
+
+		function showPreviousPicture() {
+			const collection = config.collections[curCollectionIndex].pictures;
+			curPictureIndex--;
+			if (!collection[curPictureIndex]) {
+				showLastPicture();
+			} else {
+				showPicture(collection[curPictureIndex], curPictureIndex)
+			}
+		}
+
+		function showFirstPicture() {
+			const collection = config.collections[curCollectionIndex].pictures;
+			curPictureIndex = 0;
+			showPicture(collection[curPictureIndex], curPictureIndex)
+		}
+
+		function showLastPicture() {
+			const collection = config.collections[curCollectionIndex].pictures;
+			curPictureIndex = collection.length - 1;
+			showPicture(collection[curPictureIndex], curPictureIndex)
+		}
+
 		function hidePicture() {
+			showing = false;
 			const gone = function () {
 				bg.style.zIndex = 0;
 				img.src = "";
 
-				activeThumb.classList.remove("active");
-				activeThumb = null;
+				if (activeThumb) {
+					activeThumb.classList.remove("active");
+					activeThumb = null;
+				}
 				bg.removeEventListener("transitionend", gone);
 			};
 			bg.addEventListener("transitionend", gone);
@@ -102,6 +146,8 @@
 		}
 
 		function showCollection(num, config) {
+			curCollectionIndex = num;
+
 			bg.addEventListener("click", hidePicture);
 
 			const bgContainer = document.querySelector("#background");
@@ -117,7 +163,7 @@
 
 			const contentContainer = document.querySelector("#content");
 			clear(contentContainer);
-			config.collections[num].pictures.forEach(pic => {
+			config.collections[num].pictures.forEach((pic, index) => {
 				const thumb = document.createElement("div");
 				thumb.classList.add("p", "thumb");
 				if (pic.title) {
@@ -137,7 +183,7 @@
 						2 * config.thumbs.maxRotation * Math.random()
 					) +
 					"deg)";
-				thumb.addEventListener("click", showPicture.bind(null, pic));
+				thumb.addEventListener("click", showPicture.bind(null, pic, index));
 
 				if (config.thumbs && config.thumbs.randomizePosition) {
 					thumb.style.top = (config.thumbs.randomizePosition.amount - (Math.random() * config.thumbs.randomizePosition.amount * 2)) + config.thumbs.randomizePosition.unit;
@@ -161,6 +207,40 @@
 
 			// TODO: Links
 		}
+
+		// Keyboard Navigation
+		document.body.addEventListener("keydown", event => {
+			if (!showing) {
+				return;
+			}
+			event.preventDefault();
+
+			switch (event.key) {
+				case "ArrowRight":
+				case "ArrowDown":
+				case "PageDown":
+					showNextPicture();
+					break;
+
+				case "ArrowLeft":
+				case "ArrowUp":
+				case "PageUp":
+					showPreviousPicture();
+					break;
+
+				case "Home":
+					showFirstPicture();
+					break;
+
+				case "End":
+					showLastPicture();
+					break;
+
+				case "Escape":
+					hidePicture();
+					break;
+			}
+		});
 
 		showCollection(0, config);
 
