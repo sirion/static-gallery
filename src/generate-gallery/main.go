@@ -76,6 +76,8 @@ func main() {
 	// TODO: Maybe include templates in binary? :)
 	if templatePath == "" {
 		exitApplication(36, "Please provide a valid template path")
+	} else if templatePath[len(templatePath)-1] == '/' {
+		templatePath = templatePath[0 : len(templatePath)-1]
 	}
 
 	validateOutputDir(outDir)
