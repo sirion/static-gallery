@@ -1,40 +1,75 @@
 # static-gallery
+
 ## Create static image galleries for the web
 
-Use the `bin/generate-gallery` executable to generate a gallery that can be served on webserver using only static resources.
+Use the `static_gallery` executable to generate a gallery that can be served on a webserver or a USB stick using only static resources.
 
-the `bin` folder contains compiled executables for linux, mac and windows.
+## static_gallery command
+
+	Generate a static picture gallery using the given template Generates a static gallery from the given inputs.
+
+	For each collection the options --input --background and --title should be set.
+
+	The number of directories for --input and --background and the --title options should match. If only one background
+	option is given, the pictures in that folder will be used for all collections.
+
+	Examples:
+
+	- static_gallery -i dir1 -b dir2 -t \"Collection 01\" -i dir3 -b dir4 -t \"Collection 02\" -o outdir - gallery -i dir1 -b dir2 -t \"Pictures\" -o outdir
+
+	USAGE:
+		static_gallery [FLAGS] [OPTIONS] --output &lt;output-dir\&gt; --template &lt;template-dir&gt;
+
+	FLAGS:
+		-c, --clean
+				Whether to clear the output irectory
+
+		-a, --archive
+				Whether to create an archive (downloadable zip-file) with the original pictures
+
+		-h, --help
+				Prints help information
+
+		-V, --version
+				Prints version information
+
+		-v, --verbose
+				Increases the log level. By default only errors are shown. Levels: Error, Warning, Info, Debug
 
 
-## `generate-gallery` command
+	OPTIONS:
+		-b, --background &lt;background-dirs&gt;...
+				The input directories for the background images
 
-Usage:
+			--background-size <background-size>
+				The size of the backgroun picture versions [default: 2560x1440]
 
-	generate-gallery -output foldername -template path/to/template path/to/collection(s)
+		-t, --title <collection-titles>...
+				The input directories for the background images
 
-The path must be a folder directly containing the background images and a folder containing images for each collection.
+			--display-size <display-size>
+				The size of the display picture versions [default: 2560x1440]
 
+		-i, --input <input-dirs>...
+				The input directories for the picture collections
 
-The following options must be provided:
+			--jpeg-quality <jpeg-quality>
+				Quality of the output images 1-100 [default: 75]
 
-	-output string
-		Directory where the generated gallery is written to
-	-template string
-		Directory containing the template
+		-o, --output <output-dir>
+				The output directory for the generated gallery
 
+			--resize-method <resize-method>
+				Image resize method. Valid methods: "lanczos3", "gaussian", "nearest", "cubic", "linear" [default: lanczos3]
 
-The following options can be changed:
+		-p, --template <template-dir>
+				The directory of the template to be used for the gallery
 
-	-backgroundSize string
-		Maximum size of display pictures (default "2560x1440")
-	-displaySize string
-		Maximum size of display pictures (default "2560x1440")
-	-thumbSize string
-		Maximum size of thumbnail pictures (default "960x540")
-
-	-optimize
-		Embed JavaScript and CSS into the HTML file and remove comments
-
+			--threads <threads>
+				Number of concurrent threads to use for image resizing. If set to 0 it uses the number of available logical
+				cores [default: 0]
+			--thumb-size <tumb-size>
+				The size of the small picture versions (thumbnails) [default: 960x540]
 
 ## Available templates
 
@@ -47,6 +82,7 @@ This template should simulate pictures lying on a background. The background scr
 IE is not supported by this template.
 
 The configuration is done in the global galleryConfig object:
+
 ```javascript
 window.galleryConfig = {
 	// If autoStart is set to true, the gallery is created as soon as the script is loaded
@@ -85,16 +121,15 @@ window.galleryConfig = {
 
 	// Configuration options for the full display
 	"display": {
-		// Whether to show a download button
+		// Whether to show a download button for single images linking to the full picture
 		"download": true
 	},
-
-	// The collections will be generated
-	collections: /*{{BEGIN:collections*/ [] /*END:collections}}*/
 };
 ```
 
-#### Known issues:
+The gallery data will be embedded in the index.html and replace the following characters: `/*{{BEGIN:collections*/ [] /*END:collections}}*/`
 
- - Old browsers like IE are not supported but there is no message, just a black screen
- - If not enough background pictures are provided, a black background is reached at some point
+#### Known issues
+
+- Old browsers like IE are not supported but there is no message, just a black screen
+- If not enough background pictures are provided, a black background is reached at some point

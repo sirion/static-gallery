@@ -1,6 +1,4 @@
 backup
-bin/gocode
-src/github.com
-src/golang.org
-testdata/_*
+target
+data/test/output/*
 .vscode
