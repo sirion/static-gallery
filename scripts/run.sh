@@ -1,0 +1,2 @@
+#!/bin/bash
+cargo build --release && target/release/static_gallery --output data/test/output/ --template data/templates/hauer/ --resize-method linear --collection "data/test/input01/;data/test/backgrounds01/;Collection 01" --collection "data/test/input02/;data/test/backgrounds02/;Collection 02" --collection "data/test/input03/;data/test/backgrounds03/;Collection 03" "$@"

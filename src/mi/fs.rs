@@ -1,4 +1,6 @@
 use std::path::PathBuf;
+use crate::logger::{errorln, debugln};
+
 
 pub fn dir_exists(dir: &PathBuf) -> bool {
 	match std::fs::metadata(std::path::Path::new(&dir)) {
@@ -49,7 +51,39 @@ pub fn copy_recursively(from: &PathBuf, to: &PathBuf) {
 	}
 }
 
-pub fn list_dir(dir: &PathBuf) -> Vec<String> {
+pub fn list_dir(dir: &PathBuf) -> Vec<PathBuf> {
+	let mut files: Vec<PathBuf> = Vec::new();
+
+	if !dir.is_dir() {
+		return files;
+	};
+
+	// Validate input folders can be accessed
+	let entries = match std::fs::read_dir(dir) {
+		Ok(f) => f,
+		Err(_) => {
+			return files;
+		}
+	};
+
+	for file in entries {
+		// let mut path = dir.clone();
+		match file {
+			Ok(f) => {
+				files.push(f.path());
+			},
+			Err(e) => {
+				errorln(format!("Could not read file: {}", e));
+				continue;
+			},
+		};
+	}
+
+	files
+
+}
+
+pub fn list_dir_as_strings(dir: &PathBuf) -> Vec<String> {
 	let mut files: Vec<String> = Vec::new();
 	if !dir.is_dir() {
 		return files;
@@ -79,7 +113,6 @@ pub fn list_dir(dir: &PathBuf) -> Vec<String> {
 	files
 }
 
-use crate::debugln;
 pub fn sanitize(s: &str) -> String {
 	let mut cleaned = String::new();
 
@@ -95,12 +128,21 @@ pub fn sanitize(s: &str) -> String {
 		cleaned.push(c);
 	}
 
-	debugln!("Sanitized: \"{}\" => \"{}\"", s, cleaned);
+	debugln(format!("Sanitized: \"{}\" => \"{}\"", s, cleaned));
 	cleaned
 }
 
-pub fn clean_basename<T: AsRef<std::ffi::OsStr> + ToString>(path: &T) -> String {
-	let p = std::path::Path::new(path);
-	sanitize(p.with_extension("").file_name().unwrap().to_str().unwrap_or_default())
+pub fn hash_quick(data: Vec<u8>) -> u64 {
+	let mut n = 0u64;
+
+	for c in data {
+		n += c as u64;
+	}
+
+	n
 }
 
+
+pub fn file_hash_quick(p: &PathBuf) -> u64 {
+	hash_quick(std::fs::read(p).unwrap())
+}

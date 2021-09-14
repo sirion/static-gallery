@@ -17,16 +17,29 @@
 
 
 	function galleryPreload(config) {
+		const key = config.collection_keys[0];
+		const collection = config.collections[key];
+		const backgrounds = collection.backgrounds;
+
 		let images = [];
 		if (config.preloadBackgrounds) {
-			const backgrounds = (isFinite(config.preloadBackgrounds) && config.preloadBackgrounds > 0) ? config.collections[0].backgrounds.slice(0, config.preloadBackgrounds) : config.collections[0].backgrounds;
-			images = images.concat(backgrounds);
+			if (isFinite(config.preloadBackgrounds) && config.preloadBackgrounds > 0) {
+				images = images.concat(backgrounds.slice(0, config.preloadBackgrounds));
+			} else {
+				images = images.concat(backgrounds);
+			}
+			images = images.map(pic => "p/" + pic.path + ".bg." + config.extension);
 		}
+
 		if (config.preloadThumbs) {
-			const pictures = (isFinite(config.preloadThumbs) && config.preloadThumbs > 0) ? config.collections[0].pictures.slice(0, config.preloadThumbs) : config.collections[0].pictures;
-			images = images.concat(pictures.map(pic => {
-				return (pic.thumb ? pic.thumb : pic.picture);
-			}));
+			let thumbs = [];
+			if (isFinite(config.preloadThumbs) && config.preloadThumbs > 0) {
+				thumbs = thumbs.concat(collection.pictures.slice(0, config.preloadThumbs));
+			} else {
+				thumbs = thumbs.concat(collection.pictures);
+			}
+			thumbs = thumbs.map(pic => "p/" + pic.path + ".thumb." + config.extension);
+			images = images.concat(thumbs);
 		}
 
 		preloadImages(images).then(galleryShow.bind(null, config));
@@ -72,10 +85,11 @@
 		let activeThumb = null;
 
 		let curPictureIndex = 0;
-		let curCollectionIndex = 0;
+		let curCollectionKey = 0;
 		let showing = false;
 
-		function showPicture(picture, index, config, event) {
+		function showPicture(collection, index, event) {
+			const picture = "p/" + collection.pictures[index].path;
 			curPictureIndex = index;
 			showing = true;
 
@@ -92,35 +106,35 @@
 		}
 
 		function showNextPicture() {
-			const collection = config.collections[curCollectionIndex].pictures;
+			const collection = config.collections[curCollectionKey];
 			curPictureIndex++;
-			if (!collection[curPictureIndex]) {
+			if (!collection.pictures[curPictureIndex]) {
 				showFirstPicture();
 			} else {
-				showPicture(collection[curPictureIndex], curPictureIndex)
+				showPicture(collection, curPictureIndex)
 			}
 		}
 
 		function showPreviousPicture() {
-			const collection = config.collections[curCollectionIndex].pictures;
+			const collection = config.collections[curCollectionKey];
 			curPictureIndex--;
-			if (!collection[curPictureIndex]) {
+			if (!collection.pictures[curPictureIndex]) {
 				showLastPicture();
 			} else {
-				showPicture(collection[curPictureIndex], curPictureIndex)
+				showPicture(collection, curPictureIndex)
 			}
 		}
 
 		function showFirstPicture() {
-			const collection = config.collections[curCollectionIndex].pictures;
+			const collection = config.collections[curCollectionKey];
 			curPictureIndex = 0;
-			showPicture(collection[curPictureIndex], curPictureIndex)
+			showPicture(collection, curPictureIndex)
 		}
 
 		function showLastPicture() {
-			const collection = config.collections[curCollectionIndex].pictures;
-			curPictureIndex = collection.length - 1;
-			showPicture(collection[curPictureIndex], curPictureIndex)
+			const collection = config.collections[curCollectionKey];
+			curPictureIndex = collection.pictures.length - 1;
+			showPicture(collection, curPictureIndex)
 		}
 
 		function hidePicture() {
@@ -145,17 +159,20 @@
 			}
 		}
 
-		function showCollection(num, config) {
-			curCollectionIndex = num;
+		function showCollection(key, config) {
+			curCollectionKey = key;
 
 			bg.addEventListener("click", hidePicture);
 
 			const bgContainer = document.querySelector("#background");
 			clear(bgContainer);
-			config.collections[num].backgrounds.forEach(pic => {
+
+			const collection = config.collections[key];
+
+			collection.backgrounds.forEach(pic => {
 				const bg = document.createElement("div");
 				bg.classList.add("p", "bg");
-				bg.style.backgroundImage = "url('" + pic.path + "." + config.extension + "')";
+				bg.style.backgroundImage = "url('p/" + pic.path + ".bg." + config.extension + "')";
 				bgContainer.appendChild(bg);
 			});
 
@@ -163,7 +180,7 @@
 
 			const contentContainer = document.querySelector("#content");
 			clear(contentContainer);
-			config.collections[num].pictures.forEach((pic, index) => {
+			collection.pictures.forEach((pic, index) => {
 				const title = pic.title;
 				const path = pic.path;
 
@@ -177,7 +194,7 @@
 					thumb.appendChild(thumbTitle);
 				}
 				thumb.style.backgroundImage =
-					"url('" + path + ".thumb." + config.extension + "')";
+					"url('p/" + path + ".thumb." + config.extension + "')";
 				thumb.style.transform =
 					"rotate(" +
 					Math.round(
@@ -186,7 +203,7 @@
 						2 * config.thumbs.maxRotation * Math.random()
 					) +
 					"deg)";
-				thumb.addEventListener("click", showPicture.bind(null, path, index, config));
+				thumb.addEventListener("click", showPicture.bind(null, collection, index));
 
 				if (config.thumbs && config.thumbs.randomizePosition) {
 					thumb.style.top = (config.thumbs.randomizePosition.amount - (Math.random() * config.thumbs.randomizePosition.amount * 2)) + config.thumbs.randomizePosition.unit;
@@ -245,9 +262,10 @@
 			}
 		});
 
-		showCollection(0, config);
 
-		if (config.collections.length > 1) {
+		showCollection(config.collection_keys[0], config);
+
+		if (config.collection_keys.length > 1) {
 			// TODO: Preloader for the other collections
 
 			// Show Menu to switch collections
@@ -258,32 +276,33 @@
 			const collectionMenu = document.querySelector("#collectionSwitch > .menu");
 			const collectionButton = document.querySelector("#collectionSwitch > .button");
 
-			let switchCollectionNum = null;
+			let switchCollectionKey = null;
 			function switchCollection() {
-				if (switchCollectionNum === null) {
+				if (switchCollectionKey === null) {
 					blackScreen.style.zIndex = "";
 					blackScreen.removeEventListener("transitionend", switchCollection);
 				} else {
-					showCollection(switchCollectionNum, config);
+					showCollection(switchCollectionKey, config);
 					document.documentElement.scrollTo(0, 0)
 
-					switchCollectionNum = null;
+					switchCollectionKey = null;
 					setTimeout(() => {
 						blackScreen.classList.remove("active");
 					}, 500);
 				}
 			}
 
-			config.collections.forEach((collection, num) => {
+			config.collection_keys.forEach(key => {
+				const collection = config.collections[key];
 				const entry = document.createElement("div");
 				entry.textContent = collection.title;
-				entry.addEventListener("click", function(num) {
+				entry.addEventListener("click", function(key) {
 					// TODO: Fade to/from black
-					switchCollectionNum = num;
+					switchCollectionKey = key;
 					blackScreen.addEventListener("transitionend", switchCollection);
 					blackScreen.style.zIndex = "10";
 					blackScreen.classList.add("active");
-				}.bind(null, num))
+				}.bind(null, collection.name))
 
 				collectionMenu.appendChild(entry)
 			});

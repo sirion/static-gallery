@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use image::GenericImageView;
-use crate::debug;
+// use crate::debug;
 
 const RESOLUTION_MIN:Resolution = Resolution{ width: 150, height: 150 };
 // const RESOLUTION_QFHD:Resolution = Resolution{ width: 960, height: 540 };
@@ -22,13 +23,13 @@ pub fn resize(source: &PathBuf, target: &PathBuf, resolution: Resolution, qualit
 	let image = image::open(source).unwrap();
 
 	let ratio = image.width() as f64 / image.height() as f64;
-	debug!("Ratio: {}", ratio);
 	let mut width = resolution.width as f64;
 	let mut height = resolution.height as f64;
-	if width / ratio > image.height() as f64 {
-		width = height / ratio;
-	} else {
+
+	if width / ratio > resolution.height as f64 {
 		height = width / ratio;
+	} else {
+		width = height / ratio;
 	}
 
 	let new_image = image::imageops::resize(&image, width as u32, height as u32, method);
@@ -48,11 +49,10 @@ pub fn recode(source: &PathBuf, target: &PathBuf, quality: u8) {
 }
 
 
-
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Resolution {
-	width: u32,
-	height: u32
+	pub width: u32,
+	pub height: u32
 }
 
 
