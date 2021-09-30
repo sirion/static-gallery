@@ -10,18 +10,35 @@ Use the `static_gallery` executable to generate a gallery that can be served on 
 
 	For each collection the options --input --background and --title should be set.
 
-	The number of directories for --input and --background and the --title options should match. If only one background
-	option is given, the pictures in that folder will be used for all collections.
+	The number of directories for --input and --background and the --title options should match. If no backgrounds should be
+	used for a collection, use the value "-" indicating no background directory.
 
 	Examples:
 
-	- static_gallery -i dir1 -b dir2 -t \"Collection 01\" -i dir3 -b dir4 -t \"Collection 02\" -o outdir - gallery -i dir1 -b dir2 -t \"Pictures\" -o outdir
+	Create new gallery:
+
+	- Create a new gallery with one collection
+	  static_gallery -o out/ -c "in1/;bg1/;Pictures"
+
+	- Create a new gallery with two collections (the second collection without backgrounds)
+	  static_gallery -o out/ -c "in1/;bg1/;Collection 01" -c "in2/;-;Collection 02"
+
+	Update existing gallery:
+
+	- Add a new collection
+	  static_gallery -u -o out/ -c "in1/;bg1/;New Collection"
+
+	- Add pictures to existing collection (collection with same title must already exist, else it will be created as new)
+	  static_gallery -u -o out/ -c "in2/;-;Collection 01"
+
+	- Add backgrounds to existing collection (collection with same title must already exist, else it will be created as new)
+	  static_gallery -u -o out/ -c "-;bg2/;Collection 01"
 
 	USAGE:
-		static_gallery [FLAGS] [OPTIONS] --output &lt;output-dir\&gt; --template &lt;template-dir&gt;
+		static_gallery [FLAGS] [OPTIONS] --output <output-dir> --template <template-dir>
 
 	FLAGS:
-		-c, --clean
+		-r, --remove-output
 				Whether to clear the output irectory
 
 		-a, --archive
@@ -30,6 +47,12 @@ Use the `static_gallery` executable to generate a gallery that can be served on 
 		-h, --help
 				Prints help information
 
+			--image-name-titles
+				When set to true the image names (without extensions) are used as picture titles
+
+		-u, --update
+				Update gallery (add new pictures to existing gallery) overwrites pictures with the same file name in the
+				same collection
 		-V, --version
 				Prints version information
 
@@ -38,20 +61,14 @@ Use the `static_gallery` executable to generate a gallery that can be served on 
 
 
 	OPTIONS:
-		-b, --background &lt;background-dirs&gt;...
-				The input directories for the background images
-
 			--background-size <background-size>
 				The size of the backgroun picture versions [default: 2560x1440]
 
-		-t, --title <collection-titles>...
-				The input directories for the background images
-
+		-c, --collection <collections>...
+				Collection input as "[input directory];[background directory],[collection title]". Examples: "in/;bg/;Col
+				1", "in/;-;Col 2"
 			--display-size <display-size>
 				The size of the display picture versions [default: 2560x1440]
-
-		-i, --input <input-dirs>...
-				The input directories for the picture collections
 
 			--jpeg-quality <jpeg-quality>
 				Quality of the output images 1-100 [default: 75]
@@ -127,7 +144,7 @@ window.galleryConfig = {
 };
 ```
 
-The gallery data will be embedded in the index.html and replace the following characters: `/*{{BEGIN:collections*/ [] /*END:collections}}*/`
+The gallery data will be embedded in the index.html and replace the `[]` between the patterns `/*{{BEGIN:data*/` and `/*END:data}}*/`
 
 #### Known issues
 

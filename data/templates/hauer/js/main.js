@@ -219,7 +219,13 @@
 
 			if (!config.background || !config.background.overscroll) {
 				const onResize = () => {
-					bgContainer.style.height = Math.max(contentContainer.scrollHeight, contentContainer.offsetHeight) + "px";
+					const targetHeight = Math.max(contentContainer.scrollHeight, contentContainer.offsetHeight);
+
+					let i = 0;
+					let numBgs = bgContainer.children.length;
+					while (bgContainer.offsetHeight < targetHeight) {
+						bgContainer.append(bgContainer.children[i % numBgs].cloneNode());
+					}
 				};
 				window.addEventListener("resize", onResize);
 				onResize();

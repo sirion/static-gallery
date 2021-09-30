@@ -1,7 +1,9 @@
 #![cfg(test)]
 
-use crate::gallery::CollectionInput;
-use crate::gallery::Gallery;
+use gallery;
+
+use gallery::CollectionInput;
+use gallery::Gallery;
 use lazy_static::lazy_static;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -53,12 +55,30 @@ struct FileCounts {
 
 lazy_static! {
 	static ref FC: FileCounts = FileCounts {
-		in1: std::fs::read_dir(dir_in()).unwrap().collect::<Vec<_>>().len(),
-		in2: std::fs::read_dir(dir_in2()).unwrap().collect::<Vec<_>>().len(),
-		in3: std::fs::read_dir(dir_in3()).unwrap().collect::<Vec<_>>().len(),
-		bg1: std::fs::read_dir(dir_bg()).unwrap().collect::<Vec<_>>().len(),
-		bg2: std::fs::read_dir(dir_bg2()).unwrap().collect::<Vec<_>>().len(),
-		bg3: std::fs::read_dir(dir_bg3()).unwrap().collect::<Vec<_>>().len(),
+		in1: std::fs::read_dir(dir_in())
+			.unwrap()
+			.collect::<Vec<_>>()
+			.len(),
+		in2: std::fs::read_dir(dir_in2())
+			.unwrap()
+			.collect::<Vec<_>>()
+			.len(),
+		in3: std::fs::read_dir(dir_in3())
+			.unwrap()
+			.collect::<Vec<_>>()
+			.len(),
+		bg1: std::fs::read_dir(dir_bg())
+			.unwrap()
+			.collect::<Vec<_>>()
+			.len(),
+		bg2: std::fs::read_dir(dir_bg2())
+			.unwrap()
+			.collect::<Vec<_>>()
+			.len(),
+		bg3: std::fs::read_dir(dir_bg3())
+			.unwrap()
+			.collect::<Vec<_>>()
+			.len(),
 	};
 }
 
@@ -398,5 +418,11 @@ fn test_update_existing_collection_same_pictures_and_backgrounds() {
 		}
 	}
 
-	assert_eq!(num_updates, FC.in1 + FC.bg1, "Updatablae files should only be half of the added files ({}) it is {}", FC.in1 + FC.bg1, num_updates);
+	assert_eq!(
+		num_updates,
+		FC.in1 + FC.bg1,
+		"Updatablae files should only be half of the added files ({}) it is {}",
+		FC.in1 + FC.bg1,
+		num_updates
+	);
 }

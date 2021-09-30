@@ -1,23 +1,19 @@
-use mi;
-
 mod configuration;
-mod gallery;
-
 mod test;
 
 use configuration::Configuration;
 use gallery::Gallery;
+use mi::logger::errorln;
 
-// TODO: Add Unit Tests
+// TODO: Image ordering by Exif date, file timestamp or original name
 // TODO: Document APIs inline
-// TODO: Add to existing without recreating images
-// TODO: Detect dupicate backgrounds in collections
 // TODO: Optimize output if requested
+// TODO: Allow change of gallery browser title
+// IDEA: Define additional changeable theme parameters
 // IDEA: Offer to include originals
 // IDEA: Create collection archives
 // IDEA: Validate input files are valid? (Warn if non-images are found)
 // IDEA: List current gallery status
-
 
 fn main() {
 	// Fill CLI options
@@ -32,8 +28,6 @@ fn main() {
 		.fill(config.collections, config.image_name_titles)
 		.unwrap();
 
-	gallery.remove_duplicates();
-
 	// Create output images (resized versions)
 	gallery
 		.create_images(
@@ -46,7 +40,12 @@ fn main() {
 
 	if !config.update {
 		// Copy template
-		crate::mi::fs::copy_recursively(&config.template_dir, &config.output_dir);
+		match mi::fs::copy_recursively(&config.template_dir, &config.output_dir) {
+			Ok(_) => (),
+			Err(e) => {
+				errorln(format!("Could not copy template directory: {}", e));
+			}
+		};
 	}
 
 	// Create archive if requested

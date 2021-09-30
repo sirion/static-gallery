@@ -13,15 +13,11 @@ pub struct Picture {
 pub struct Image {
 	// Basename of the image
 	#[serde(rename = "path")]
-	pub basename: String,
+	pub hash: u64,
 
 	#[serde(skip)]
 	pub update: bool,
 
 	#[serde(skip)]
 	pub source_path: PathBuf,
-
-	pub original_hash: u64,
 }
-
-

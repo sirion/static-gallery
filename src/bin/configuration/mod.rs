@@ -1,15 +1,14 @@
+use mi::logger::infoln;
 
-use mi;
-use mi::logger::{infoln};
-
+use gallery::CollectionInput;
+use mi::img::Resolution;
+use std::path::Path;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use mi::img::Resolution;
-use crate::gallery::CollectionInput;
 
 /// Generate a static picture gallery using the given template
 #[derive(StructOpt, Debug)]
-#[structopt(name = "miGallery")]
+#[structopt(name = "static_gallery")]
 /// Generates a static gallery from the given inputs.
 ///
 /// For each collection the options --input --background and --title should be set.
@@ -38,7 +37,6 @@ use crate::gallery::CollectionInput;
 ///    static_gallery -u -o out/ -c "-;bg2/;Collection 01"
 ///
 pub struct Configuration {
-
 	/// Collection input as "[input directory];[background directory],[collection title]". Examples: "in/;bg/;Col 1", "in/;-;Col 2"
 	#[structopt(short = "c", long = "collection")]
 	pub collections: Vec<CollectionInput>,
@@ -87,7 +85,7 @@ pub struct Configuration {
 	/// Increases the log level. By default only errors are shown.
 	/// Levels: Error, Warning, Info, Debug
 	#[structopt(short = "v", long = "verbose", parse(from_occurrences))]
-    pub verbose: u8,
+	pub verbose: u8,
 
 	/// When set to true the image names (without extensions) are used as picture titles
 	#[structopt(long = "image-name-titles")]
@@ -99,23 +97,19 @@ pub struct Configuration {
 
 	// /// Disables any output (including errors)
 	// #[structopt(short = "s", long = "silent")]
-    // silent: bool,
-
-
+	// silent: bool,
 	#[structopt(skip)]
 	delete_output_dir: bool,
 	#[structopt(skip)]
 	create_output_dir: bool,
 }
 
-
-
 impl Configuration {
 	pub fn from_cli() -> Result<Configuration, String> {
 		let mut config = Configuration::from_args();
 
 		// Verbose is 0 by default, which as log level would be silent, but we wand errors to be shown by default
-		config.verbose = config.verbose + 1;
+		config.verbose += 1;
 		mi::logger::set_level(config.verbose);
 		// println!("Set log_level to {}", config.verbose);
 
@@ -125,20 +119,18 @@ impl Configuration {
 		Ok(config)
 	}
 
-
 	fn init(&mut self) -> Result<u8, String> {
 		// Run initialization tasks if any
 
 		let mut errors: Vec<String> = Vec::new();
 
-
 		// Remove output files recursively
 		if self.clean_output {
 			let removed = match std::fs::remove_dir_all(&self.output_dir) {
 				Ok(_) => {
-					infoln(format!("Output directory removed"));
+					infoln("Output directory removed".to_string());
 					true
-				},
+				}
 				Err(e) => {
 					errors.push(format!("Could not remove output directory: {}", e));
 					false
@@ -148,8 +140,8 @@ impl Configuration {
 			if removed {
 				match std::fs::create_dir_all(std::path::Path::new(&self.output_dir)) {
 					Ok(_) => {
-						infoln(format!("Output directory created"));
-					},
+						infoln("Output directory created".to_string());
+					}
 					Err(e) => {
 						errors.push(format!("Output directory could not be created: {}", e));
 					}
@@ -157,11 +149,7 @@ impl Configuration {
 			}
 		}
 
-
-
-
-
-		if errors.len() > 0 {
+		if errors.is_empty() {
 			Err(errors.join("\n"))
 		} else {
 			Ok(0)
@@ -177,72 +165,96 @@ impl Configuration {
 			infoln(format!("Using {} threads for image resizing", self.threads));
 		}
 
-
 		if self.jpeg_quality < 1 || self.jpeg_quality > 100 {
 			errors.push(String::from("Jpeg quality must be between 1 and 100"));
 		}
 
-		if self.collections.len() == 0 {
+		if self.collections.is_empty() {
 			errors.push(String::from("No collections specified"));
 		}
 
 		// Validate collections
 		for col in &self.collections {
-			if col.title == "" || col.title == "-" {
-				errors.push(format!("Collections must have valid titles"));
+			if col.title.is_empty() || col.title == "-" {
+				errors.push("Collections must have valid titles".to_string());
 			}
 
 			if !self.update && col.input_dir.is_none() {
-				errors.push(format!("New collection \"{}\" does not have an input directory", col.title));
+				errors.push(format!(
+					"New collection \"{}\" does not have an input directory",
+					col.title
+				));
 			}
 
 			if col.input_dir.is_none() && col.background_dir.is_none() {
-				errors.push(format!("New collection \"{}\" has neither an input nor background directory", col.title));
+				errors.push(format!(
+					"New collection \"{}\" has neither an input nor background directory",
+					col.title
+				));
 			}
 
-			if col.input_dir.is_some() && !crate::gallery::contains_images(&col.input_dir.as_ref().unwrap()) {
-				errors.push(format!("Input directory for collection \"{}\" does not contain images: {}", col.title, col.input_dir.as_ref().unwrap().to_string_lossy()));
+			if col.input_dir.is_some() && !gallery::contains_images(col.input_dir.as_ref().unwrap())
+			{
+				errors.push(format!(
+					"Input directory for collection \"{}\" does not contain images: {}",
+					col.title,
+					col.input_dir.as_ref().unwrap().to_string_lossy()
+				));
 			}
 
-			if col.background_dir.is_some() && !crate::gallery::contains_images(&col.background_dir.as_ref().unwrap()) {
-				errors.push(format!("Background directory for collection \"{}\" does not contain images: {}", col.title, col.background_dir.as_ref().unwrap().to_string_lossy()));
+			if col.background_dir.is_some()
+				&& !gallery::contains_images(col.background_dir.as_ref().unwrap())
+			{
+				errors.push(format!(
+					"Background directory for collection \"{}\" does not contain images: {}",
+					col.title,
+					col.background_dir.as_ref().unwrap().to_string_lossy()
+				));
 			}
 		}
 
-
-
 		match self.resize_method.as_str() {
-			"lanczos3" => {},
-			"gaussian" => {},
-			"nearest" => {},
-			"cubic" => {},
-			"linear" => {},
+			"lanczos3" => {}
+			"gaussian" => {}
+			"nearest" => {}
+			"cubic" => {}
+			"linear" => {}
 			_ => {
 				errors.push(format!("Invalid resize method \"{}\". Valid options: \"lanczos3\", \"gaussian\" and \"nearest\"", self.resize_method));
-			},
+			}
 		};
 
 		// Validate template folder exists
-		if !crate::mi::fs::dir_exists(&self.template_dir) {
-			errors.push(format!("Template directory is not a directory: {}", self.template_dir.to_str().unwrap()));
+		if !Path::new(&self.template_dir).is_dir() {
+			errors.push(format!(
+				"Template directory is not a directory: {}",
+				self.template_dir.to_str().unwrap()
+			));
 		}
 		// Validate template is valid
-		if !crate::mi::fs::file_exists(&self.template_dir.join("index.html")) {
-			errors.push(format!("Template directory is not a directory: {}", self.template_dir.to_str().unwrap()));
+		if !self.template_dir.join("index.html").is_file() {
+			errors.push(format!(
+				"Template directory is not a directory: {}",
+				self.template_dir.to_str().unwrap()
+			));
 		}
-
 
 		if self.update && self.clean_output {
-			errors.push(String::from("Options --clean und --update are mutually exclusive. Choose only one of them."));
+			errors.push(String::from(
+				"Options --clean und --update are mutually exclusive. Choose only one of them.",
+			));
 		}
 
-		if self.update && !crate::mi::fs::file_exists(&self.output_dir.join("index.html")) {
-			errors.push(format!("No index.html found in the output folder ({}), cannot update.", self.output_dir.to_str().unwrap()));
+		if self.update && !self.output_dir.join("index.html").is_file() {
+			errors.push(format!(
+				"No index.html found in the output folder ({}), cannot update.",
+				self.output_dir.to_str().unwrap()
+			));
 		}
 
-		let output_dir_exists = crate::mi::fs::dir_exists(&self.output_dir);
+		let output_dir_exists = Path::new(&self.output_dir).is_dir();
 		let output_dir_empty = if output_dir_exists {
-			crate::mi::fs::list_dir_as_strings(&self.output_dir).len() == 0
+			mi::fs::list_dir(&self.output_dir).is_empty()
 		} else {
 			true
 		};
@@ -259,11 +271,13 @@ impl Configuration {
 			// Neither update nor delete output directory. Must not exist or be empty
 			self.create_output_dir = !output_dir_exists;
 		} else {
-			errors.push(format!("Output directory already exists: {}", &self.output_dir.to_str().unwrap()));
+			errors.push(format!(
+				"Output directory already exists: {}",
+				&self.output_dir.to_str().unwrap()
+			));
 		}
 
-
-		if errors.len() > 0 {
+		if errors.is_empty() {
 			Err(errors.join("\n"))
 		} else {
 			Ok(0)
