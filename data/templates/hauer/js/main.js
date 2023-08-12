@@ -1,8 +1,6 @@
 (function () {
 	"use strict";
 
-	// TODO: Deep Links to collection and picture
-
 	window.galleryInit = function galleryInit(config) {
 		if (config.preloadThumbs || config.preloadBackgrounds) {
 			const loadingScreenBg = document.querySelector("#loading");
@@ -76,9 +74,34 @@
 		}
 	}
 
+	function hash(key, value = null) {
+		const parts = window.location.hash.split("|").filter(p => !!p);
+		const hashes = parts.reduce((prev, cur) => {
+			const [ key, ...values ] = cur.split("=");
+			if (key && values.length > 0) {
+				prev[key] = values.join("=");
+			}
+			return prev;
+		}, {});
+
+		if (value === null) {
+			// Getter
+			return hashes[key];
+		} else {
+			// Setter
+			if (value === "") {
+				delete hashes[key];
+			} else {
+				hashes[key] = value
+			}
+			window.location.hash = "|" + Object.entries(hashes).map(e => `${e[0]}=${e[1]}`).join("|") + "|";
+		}
+	}
+
 	function galleryShow(config) {
 		const bg = document.querySelector("#pictureDisplay");
 		const img = document.querySelector("#pictureDisplay > img");
+		const vid = document.querySelector("#pictureDisplay > video");
 		const fullsizeLink = document.querySelector("#pictureDisplay > a");
 
 		fullsizeLink.addEventListener("click", e => e.stopPropagation());
@@ -87,11 +110,17 @@
 		let curPictureIndex = 0;
 		let curCollectionKey = 0;
 		let showing = false;
+		let showingVideo = false;
 
 		function showPicture(collection, index, event) {
-			const picture = "p/" + collection.pictures[index].path;
+			const isVideo = !!collection.pictures[index].video;
+			showingVideo = isVideo;
+			const path = collection.pictures[index].path;
+			const picture = isVideo ? "v/" + path : "p/" + path;
 			curPictureIndex = index;
 			showing = true;
+
+			hash("i", index);
 
 			if (event) {
 				activeThumb = event.target;
@@ -100,7 +129,21 @@
 
 			bg.style.opacity = 1;
 			bg.style.zIndex = 10;
-			img.src = picture + ".disp." + config.extension;
+			
+			if (isVideo) {
+				img.style.display = "none";
+				vid.style.display = "block";
+				vid.src = picture + "." + config.videoExtension;
+				vid.play();
+
+				fullsizeLink.style.display = "none";
+			} else {
+				img.style.display = "block";
+				vid.style.display = "none";
+				img.src = picture + ".disp." + config.extension;
+
+				fullsizeLink.style.display = "";
+			}
 
 			fullsizeLink.href = picture + "." + config.extension;
 		}
@@ -148,6 +191,11 @@
 					activeThumb = null;
 				}
 				bg.removeEventListener("transitionend", gone);
+
+				hash("i", "");
+				if (showingVideo) {
+					vid.pause();
+				}
 			};
 			bg.addEventListener("transitionend", gone);
 			bg.style.opacity = 0;
@@ -161,14 +209,19 @@
 
 		function showCollection(key, config) {
 			curCollectionKey = key;
+			hash("c", key);
 
-			bg.addEventListener("click", hidePicture);
+			bg.addEventListener("click", e => {
+				if (e.target !== img && e.target !== vid) {
+					hidePicture();
+				}
+			});
 
 			const bgContainer = document.querySelector("#background");
 			clear(bgContainer);
 
 			const collection = config.collections[key];
-
+			
 			collection.backgrounds.forEach(pic => {
 				const bg = document.createElement("div");
 				bg.classList.add("p", "bg");
@@ -182,7 +235,8 @@
 			clear(contentContainer);
 			collection.pictures.forEach((pic, index) => {
 				const title = pic.title;
-				const path = pic.path;
+				const path = pic.video ? "v/" + pic.path : "p/" + pic.path;
+
 
 				const thumb = document.createElement("div");
 				thumb.classList.add("p", "thumb");
@@ -194,7 +248,7 @@
 					thumb.appendChild(thumbTitle);
 				}
 				thumb.style.backgroundImage =
-					"url('p/" + path + ".thumb." + config.extension + "')";
+					"url('" + path + ".thumb." + config.extension + "')";
 				thumb.style.transform =
 					"rotate(" +
 					Math.round(
@@ -216,8 +270,8 @@
 
 				contentContainer.appendChild(thumb);
 			});
-
-			if (!config.background || !config.background.overscroll) {
+			
+			if (collection.backgrounds.length > 0 && (!config.background || !config.background.overscroll)) {
 				const onResize = () => {
 					bgContainer.style.height = Math.max(contentContainer.scrollHeight, contentContainer.offsetHeight) + "px";
 				};
@@ -262,8 +316,19 @@
 			}
 		});
 
+		let collectionName = hash("c")
+		let collectionIndex = collectionName ? config.collection_keys.indexOf(collectionName) : -1;
+		if (collectionIndex == -1) {
+			collectionName = config.collection_keys[0];
+			collectionIndex = 0;
+		}
+		showCollection(config.collection_keys[collectionIndex], config);
 
-		showCollection(config.collection_keys[0], config);
+		const pictureIndex = hash("i");
+		if (pictureIndex !== undefined && pictureIndex !== "") {
+			showPicture(config.collections[collectionName], pictureIndex);
+		}
+
 
 		if (config.collection_keys.length > 1) {
 			// TODO: Preloader for the other collections
