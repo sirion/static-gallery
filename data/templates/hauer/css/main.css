@@ -36,7 +36,7 @@ body {
 }
 
 .p {
-	background-position: 50% 50%;
+	background-position: 50% 20%;
 	background-repeat: no-repeat;
 	background-size: cover;
 }
@@ -47,17 +47,18 @@ body {
 
 #footer {
 	display: flex;
-	position: absolute;
+	position: fixed;
 	bottom: 0;
 	width: 100vw;
 	height: 4rem;
 	font-size: 2rem;
 	justify-content: center;
 	align-items: center;
+	gap: 2em;
 }
 
 #footer .archive {
-	display: block;
+	display: inline-block
 }
 
 #footer .archive a {
@@ -197,6 +198,11 @@ body {
 	max-height: 90vh;
 	width: auto;
 	height: auto;
+}
+
+#pictureDisplay > video {
+	max-height: 95%;
+	max-width: 90%;
 }
 
 #pictureDisplay > a {
