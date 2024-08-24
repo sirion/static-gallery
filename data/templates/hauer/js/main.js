@@ -279,6 +279,11 @@
 			if (collection.backgrounds.length > 0 && (!config.background || !config.background.overscroll)) {
 				const onResize = () => {
 					bgContainer.style.height = Math.max(contentContainer.scrollHeight, contentContainer.offsetHeight) + "px";
+
+					while (bgContainer.getBoundingClientRect().bottom - bgContainer.lastChild.getBoundingClientRect().bottom > 0) {
+						bgContainer.append(bgContainer.lastChild.cloneNode(true));
+					}
+
 				};
 				window.addEventListener("resize", onResize);
 				onResize();
