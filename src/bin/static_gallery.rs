@@ -8,6 +8,11 @@ mod test;
 use configuration::Configuration;
 use gallery::Gallery;
 
+// TODO: Video Support
+
+// TODO (hauer template): Make sure backgrounds don't run out
+// TODO: Optimize Rotation detection (currently reading images twice)
+
 // TODO: Add Unit Tests
 // TODO: Document APIs inline
 // TODO: Add to existing without recreating images

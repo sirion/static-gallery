@@ -79,6 +79,7 @@ pub fn list_dir(dir: &PathBuf) -> Vec<PathBuf> {
 		};
 	}
 
+	files.sort();
 	files
 
 }

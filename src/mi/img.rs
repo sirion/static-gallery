@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{fmt::{self, format}, path::PathBuf, string};
 use image::GenericImageView;
+use exif::{In, Tag};
+
+use crate::logger;
 // use crate::debug;
 
 const RESOLUTION_MIN:Resolution = Resolution{ width: 150, height: 150 };
@@ -9,6 +12,57 @@ const RESOLUTION_MIN:Resolution = Resolution{ width: 150, height: 150 };
 // const RESOLUTION_QHD:Resolution = Resolution{ width: 2560, height: 1440 };
 // const RESOLUTION_UHD:Resolution = Resolution{ width: 3840, height: 2160 };
 
+
+enum Rotation {
+	None, R90, R180, R270
+}
+
+
+fn get_rotation(image_path: &PathBuf) -> Rotation {
+	let file = std::fs::File::open(image_path).unwrap();
+    let mut bufreader = std::io::BufReader::new(file);
+    let exifreader = exif::Reader::new();
+    let res_exif_data = exifreader.read_from_container(&mut bufreader);
+
+	if res_exif_data.is_err() {
+		logger::warnln(format!("Could not read exif data for: {}", image_path.to_string_lossy()));
+		return Rotation::None;
+	}
+	let exif_data = res_exif_data.unwrap();
+
+	let exif_field = exif_data.get_field(Tag::Orientation, In::PRIMARY);
+
+	let r = match exif_field {
+		None => 1,
+		Some(value) => value.value.get_uint(0).unwrap(),
+	};
+
+	let rotation = match r {
+		1 => Rotation::None,
+		2 => Rotation::None, // Mirror horizontal
+		3 => Rotation::R180,
+		4 => Rotation::None, // Mirror vertical
+		5 => Rotation::None, // Mirror horizontal and rotate 270 CW
+		6 => Rotation::R90,
+		7 => Rotation::None, // Mirror horizontal and rotate 90 CW
+		8 => Rotation::R270,
+		_other => Rotation::None,
+	};
+
+
+	// print!("Rotation: ");
+	// print!("{}", image_path.to_str().unwrap());
+	// print!(" - ");
+	// match rotation {
+	// 	Rotation::None => print!("None"),
+	// 	Rotation::R180 => print!("180"),
+	// 	Rotation::R270 => print!("270"),
+	// 	Rotation::R90  => print!("90"),
+	// };
+	// println!("");
+
+	rotation
+}
 
 pub fn resize(source: &PathBuf, target: &PathBuf, resolution: Resolution, quality: u8, method: &String) {
 	let method = match method.as_str() {
@@ -20,7 +74,14 @@ pub fn resize(source: &PathBuf, target: &PathBuf, resolution: Resolution, qualit
 		_ => panic!("Invalid resize method: {}", method),
 	};
 
-	let image = image::open(source).unwrap();
+	let mut image = image::open(source).unwrap();
+
+	image = match get_rotation(source) {
+		Rotation::R90 => image.rotate90(),
+		Rotation::R180 => image.rotate180(),
+		Rotation::R270 => image.rotate270(),
+		Rotation::None => image,
+	};
 
 	let ratio = image.width() as f64 / image.height() as f64;
 	let mut width = resolution.width as f64;
@@ -41,8 +102,15 @@ pub fn resize(source: &PathBuf, target: &PathBuf, resolution: Resolution, qualit
 }
 
 pub fn recode(source: &PathBuf, target: &PathBuf, quality: u8) {
-	let image = image::open(source).unwrap();
+	let mut image = image::open(source).unwrap();
 
+	image = match get_rotation(source) {
+		Rotation::R90 => image.rotate90(),
+		Rotation::R180 => image.rotate180(),
+		Rotation::R270 => image.rotate270(),
+		Rotation::None => image,
+	};
+	
 	let mut out = std::fs::File::create(target).unwrap();
 	let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, quality);
 	enc.encode_image(&image).unwrap();

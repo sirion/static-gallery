@@ -119,7 +119,7 @@ impl Collection {
 		std::fs::create_dir_all(&pictures_dir)?;
 
 		// TODO: Do not overwrite pictures with the same name but different content
-		for mut p in self.pictures.iter_mut() {
+		for p in self.pictures.iter_mut() {
 			if !p.image.update {
 				continue;
 			}
@@ -201,7 +201,7 @@ impl Collection {
 		}
 
 		// TODO: Do not overwrite pictures with the same name but different content
-		for mut p in self.backgrounds.iter_mut() {
+		for p in self.backgrounds.iter_mut() {
 			if !p.update {
 				continue;
 			}

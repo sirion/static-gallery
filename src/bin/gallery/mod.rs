@@ -147,6 +147,7 @@ fn valid_extension(path: &std::path::PathBuf) -> bool {
 	match ext.as_str() {
 		"jpg" => true,
 		"jpeg" => true,
+		"mp4" => true,
 		&_ => false,
 	}
 }
