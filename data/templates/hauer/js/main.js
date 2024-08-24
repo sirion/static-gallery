@@ -3,16 +3,20 @@
 
 	window.galleryInit = function galleryInit(config) {
 		if (config.preloadThumbs || config.preloadBackgrounds) {
-			const loadingScreenBg = document.querySelector("#loading");
-			if (loadingScreenBg) {
-				loadingScreenBg.style.display = "flex";
-			}
+			toggleLoadingScreen(true);
 			galleryPreload(config);
 		} else {
 			galleryShow(config);
 		}
 	}
 
+
+	function toggleLoadingScreen(show = false) {
+		const lbg = document.querySelector("#loading");
+		if (lbg) {
+			lbg.style.display = show ? "flex" : "none";
+		}
+	}
 
 	function galleryPreload(config) {
 		const key = config.collection_keys[0];
@@ -99,6 +103,7 @@
 	}
 
 	function galleryShow(config) {
+		setTimeout(() => toggleLoadingScreen(false), 1000); // Meka sure the loadingscreen is gone when the gallery is shown
 		const bg = document.querySelector("#pictureDisplay");
 		const img = document.querySelector("#pictureDisplay > img");
 		const vid = document.querySelector("#pictureDisplay > video");
